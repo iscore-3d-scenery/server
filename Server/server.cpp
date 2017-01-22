@@ -122,12 +122,6 @@ void server::setWindow()
 
     for(int i = 0; i < _clientSocketList.size(); ++i)
     {
-        //QPushButton* b = new QPushButton((_clientStateList[i] == 0) ? "Receiver" : "Sender");
-        //b->setStyleSheet((_clientStateList[i] == 0) ? "background-color: #94bece;" : "background-color: #0199d9;");
-        char str[20];
-        sprintf(str, "Client n°%d", i);
-        //QLabel* l = new QLabel(tr(str));
-
         _layout->addWidget(_clientButton[i], i+2, 0);
         _layout->addWidget(_clientName[i], i+2, 1);
     }
