@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <QLabel>
+#include <QLineEdit>
 
 class server : public QObject
 {
@@ -36,6 +37,7 @@ private:
     QTcpServer* _S;
     QPushButton* _q;
     QList <QPushButton*> _clientButton;
+    QList <QLineEdit*> _clientName;
     quint16 _port;
     QHostAddress _address;
     QList <quint8> _clientStateList;

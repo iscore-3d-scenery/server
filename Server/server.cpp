@@ -16,7 +16,12 @@ server::server(QObject *parent) : QObject(parent)
         connect(_S, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
         _window = new QWidget();
         _layout = new QGridLayout();
+        char info[100];
+        sprintf(info, "Server : Host(%s) / Port(%d)", _address.toString().toStdString().c_str(), _port);
+        QLabel* infoL = new QLabel(tr(info));
+        _layout->addWidget(infoL, 0, 0, 1, 2);
         _q = new QPushButton("Quit");
+        _layout->addWidget(_q, 1, 0, 1, 2);
         setWindow();
         QObject::connect(_q, SIGNAL(clicked()), qApp, SLOT(quit()));
     }
@@ -33,13 +38,23 @@ void server::acceptConnection()
     _clientSocketList.push_back(client);
     _clientStateList.push_back(0);
 
+    QPushButton* button = new QPushButton("Receiver");
+    button->setStyleSheet("background-color: #94bece;");
+    _clientButton.push_back(button);
+    char str[20];
+    sprintf(str, "Client n°%d", _clientSocketList.size());
+    QLineEdit* name = new QLineEdit(str);
+    _clientName.push_back(name);
+
     qDebug() << "New connection";
 
     client->write("1", 1);
 
+    connect(button, SIGNAL(clicked()), this, SLOT(changeClientState()));
     connect(client, SIGNAL(readyRead()), this, SLOT(startRead()));
     connect(client, SIGNAL(disconnected()), this, SLOT(clientDisconnection()));
     setWindow();
+    qDebug() << _clientButton.size() << " | " << _clientName.size() << " | " << _clientStateList.size() << " | " << _clientSocketList.size();
 }
 
 void server::startRead()
@@ -62,10 +77,15 @@ void server::clientDisconnection()
     QTcpSocket* client = qobject_cast<QTcpSocket*>(QObject::sender());
     qDebug() << "Connection ended.";
     int label =_clientSocketList.indexOf(client);
-    _clientSocketList.removeAt(label);
-    _clientSocketList.removeOne(client);
+    delete _clientButton.takeAt(label);
+    delete _clientName.takeAt(label);
+    _clientStateList.takeAt(label);
+    _clientSocketList.takeAt(label);
+    delete _layout->takeAt(3 + label * 2);
+    delete _layout->takeAt(3 + label * 2 + 1);
     client->close();
     setWindow();
+    qDebug() << _clientButton.size() << " | " << _clientName.size() << " | " << _clientStateList.size() << " | " << _clientSocketList.size();
 }
 
 void server::transferString(QTcpSocket* client, QString string)
@@ -96,34 +116,21 @@ void server::transferString(QTcpSocket* client, QString string)
 void server::setWindow()
 {
     QLayoutItem *item;
-    while((item = _layout->takeAt(0)))
+    while((item = _layout->takeAt(3)))
     {
-        delete item;
     }
-    delete _layout;
-    _layout = new QGridLayout();
-
-
-    char info[100];
-    sprintf(info, "Server : Host(%s) / Port(%d)", _address.toString().toStdString().c_str(), _port);
-    QLabel* infoL = new QLabel(tr(info));
-    _layout->addWidget(infoL, 0, 0, 1, 2);
 
     for(int i = 0; i < _clientSocketList.size(); ++i)
     {
-        QPushButton* b = new QPushButton((_clientStateList[i] == 0) ? "Receiver" : "Sender");
-        b->setStyleSheet((_clientStateList[i] == 0) ? "background-color: #94bece;" : "background-color: #0199d9;");
+        //QPushButton* b = new QPushButton((_clientStateList[i] == 0) ? "Receiver" : "Sender");
+        //b->setStyleSheet((_clientStateList[i] == 0) ? "background-color: #94bece;" : "background-color: #0199d9;");
         char str[20];
         sprintf(str, "Client n°%d", i);
-        QLabel* l = new QLabel(tr(str));
+        //QLabel* l = new QLabel(tr(str));
 
-        _layout->addWidget(b, i+1, 0);
-        QObject::connect(b, SIGNAL(clicked()), this, SLOT(changeClientState()));
-        _layout->addWidget(l, i+1, 1);
+        _layout->addWidget(_clientButton[i], i+2, 0);
+        _layout->addWidget(_clientName[i], i+2, 1);
     }
-
-    _layout->addWidget(_q, _clientSocketList.size()+1, 0, 1, 2);
-
 
     _window->setLayout(_layout);
     _window->show();
@@ -131,19 +138,13 @@ void server::setWindow()
 
 void server::changeClientState()
 {
-    int label = 0;
     QPushButton* button = qobject_cast<QPushButton*>(QObject::sender());
-    _layout->removeWidget(button);
-    for(int i = 1; i < _layout->count(); i = i+2)
-    {
-        const char * name = _layout->itemAt(i)->widget()->metaObject()->className();
-        if(!strcmp(name, "QLabel"))
-        {
-            label = (i-1) / 2;
-            break;
-        }
-    }
+    int label =_clientButton.indexOf(button);
+
     _clientStateList[label] = 1 - _clientStateList[label];
+    _clientButton[label]->setText((_clientStateList[label] == 0) ? "Receiver" : "Sender");
+    _clientButton[label]->setStyleSheet((_clientStateList[label] == 0) ? "background-color: #94bece;" : "background-color: #0199d9;");
     setWindow();
+    qDebug() << _clientButton.size() << " | " << _clientName.size() << " | " << _clientStateList.size() << " | " << _clientSocketList.size();
 }
 
