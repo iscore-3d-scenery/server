@@ -85,7 +85,6 @@ void server::clientDisconnection()
     delete _layout->takeAt(3 + label * 2 + 1);
     client->close();
     setWindow();
-    qDebug() << _clientButton.size() << " | " << _clientName.size() << " | " << _clientStateList.size() << " | " << _clientSocketList.size();
 }
 
 void server::transferString(QTcpSocket* client, QString string)
